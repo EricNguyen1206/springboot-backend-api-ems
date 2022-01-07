@@ -4,8 +4,6 @@ import java.util.Date;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
@@ -17,46 +15,48 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Table(name = "Employee")
 public class Employee {
 	@Id
-	@GeneratedValue(strategy = GenerationType.IDENTITY)
+	@Column(name = "id", nullable = false)
 	private long id;
 	
-	@Column(name = "first_name")
+	@Column(name = "first_name", length = 25, nullable = false)
 	protected String firstName;
 	
-	@Column(name = "last_name")
+	@Column(name = "last_name", length = 50, nullable = false)
 	protected String lastName;
 	
-	@Column(name = "gender")
+	@Column(name = "gender", nullable = false)
 	protected String gender;
 	
-	@Column(name = "email", unique = true)
+	@Column(name = "email", unique = true, nullable = false)
 	protected String email;
 	
-	@Column(name = "phone", unique = true)
+	@Column(name = "phone", unique = true, nullable = false)
 	protected String phone;
 	
 	@Temporal(TemporalType.DATE)
 	@DateTimeFormat(pattern = "dd/mm/yyyy")
+	@Column(name = "birth_day", nullable = false)
 	protected Date birthDay;
 	
 	@Column(name = "role")
 	protected String role = "Staff";
 	
-	@Column(name = "salary")
+	@Column(name = "salary", nullable = false)
 	protected double salary;
 	
 	@Column(name = "depart")
 	protected long depart = 0;
-	
+
 	//Default Constructor
 	public Employee() {
 		super();
 	}
 	
 	//Constructor
-	public Employee(String firstName, String lastName, String gender, String email, String phone, Date birthDay,
+	public Employee(long id, String firstName, String lastName, String gender, String email, String phone, Date birthDay,
 			double salary) {
 		super();
+		this.id = id;
 		this.firstName = firstName;
 		this.lastName = lastName;
 		this.gender = gender;		
@@ -64,6 +64,44 @@ public class Employee {
 		this.phone = phone;
 		this.birthDay = birthDay;
 		this.salary = salary;
+	}
+	
+	//constructor with employee
+	public Employee(Employee employee) {
+		super();
+		this.id = employee.getId();
+		this.firstName = employee.getFirstName();
+		this.lastName = employee.getLastName();
+		this.gender = employee.getGender();		
+		this.email = employee.getEmail();
+		this.phone = employee.getPhone();
+		this.birthDay = employee.getBirthDay();
+		this.salary = employee.getSalary();
+		this.depart = employee.getDepart();
+	}
+	
+	//Constructor with Manager
+		public Employee(Manager manager) {
+			super();
+			this.id = manager.getId();
+			this.firstName = manager.getFirstName();
+			this.lastName = manager.getLastName();
+			this.gender = manager.getGender();		
+			this.email = manager.getEmail();
+			this.phone = manager.getPhone();
+			this.birthDay = manager.getBirthDay();
+			this.salary = manager.getSalary();
+			this.depart = manager.getDepart();
+	}
+		
+	public void setToManager(double factor) {
+		setSalary(getSalary() * factor);
+		setRole("Manager");
+	}
+	
+	public void setToStaff(double factor) {
+		setSalary(getSalary() / factor);
+		setRole("Staff");
 	}
 
 	public long getId() {

@@ -1,6 +1,6 @@
 package net.java.springboot.models;
 
-import java.util.Set;
+import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
@@ -20,32 +20,35 @@ public class Department {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private long id;
 	
-	@Column(name = "name")
+	@Column(name = "name", length = 100, unique = true, nullable = false)
 	String name;
 	
-	@Column(name = "basicSalary")
-	private double basicSalary;
+	@Column(name = "numberOfEmployees")
+	private int numberOfEmployees = 0;
+	
+	@Column(name = "maxEployees", nullable = false)
+	private int maxEmployees;
 	
 	//Set of employee
 	@OneToMany(targetEntity = Employee.class, cascade = CascadeType.ALL)
 	@JoinColumn(name = "depart_fk", referencedColumnName = "id")
-	Set<Employee> employee;
+	private List<Employee> employee;
 	
 	//One manager
-	@OneToOne(targetEntity = Employee.class, cascade = CascadeType.ALL)
+	@OneToOne(targetEntity = Manager.class, cascade = CascadeType.ALL)
     @JoinColumn(name = "manager_id", referencedColumnName = "id")
-    private Employee manager;
+    private Manager manager;
 	
 	//Default Constructor
 	public Department() {
 		super();
 	}
 
-	//Constructor with name and basic salary
-	public Department(String name, double basicSalary) {
+	//Constructor with name and maxEmployees
+	public Department(String name, int maxEmployees) {
 		super();
 		this.name = name;
-		this.basicSalary = basicSalary;
+		this.maxEmployees = maxEmployees;
 	}
 
 	public long getId() {
@@ -64,33 +67,41 @@ public class Department {
 		this.name = name;
 	}
 
-	public double getBasicSalary() {
-		return basicSalary;
+	public int getNumberOfEmployees() {
+		return numberOfEmployees;
 	}
 
-	public void setBasicSalary(double basicSalary) {
-		this.basicSalary = basicSalary;
+	public void setNumberOfEmployees(int numberOfEmployees) {
+		this.numberOfEmployees = numberOfEmployees;
 	}
 
-	public Set<Employee> getEmployee() {
+	public int getMaxEmployees() {
+		return maxEmployees;
+	}
+
+	public void setMaxEmployees(int maxEmployees) {
+		this.maxEmployees = maxEmployees;
+	}
+
+	public List<Employee> getEmployee() {
 		return employee;
 	}
 
-	public void setEmployee(Set<Employee> employee) {
+	public void setEmployee(List<Employee> employee) {
 		this.employee = employee;
 	}
 
-	public Employee getManager() {
+	public Manager getManager() {
 		return manager;
 	}
 
-	public void setManager(Employee manager) {
+	public void setManager(Manager manager) {
 		this.manager = manager;
 	}
 
 	@Override
 	public String toString() {
-		return "Department [id=" + id + ", name=" + name + ", basicSalary=" + basicSalary + ", employee=" + employee
-				+ ", manager=" + manager + "]";
+		return "Department [id=" + id + ", name=" + name + ", numberOfEmployees=" + numberOfEmployees
+				+ ", maxEmployees=" + maxEmployees + ", employee=" + employee + ", manager=" + manager + "]";
 	}
 }

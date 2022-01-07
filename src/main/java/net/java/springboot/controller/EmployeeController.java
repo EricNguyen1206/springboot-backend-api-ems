@@ -1,8 +1,11 @@
 package net.java.springboot.controller;
 
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import net.java.springboot.models.Department;
 import net.java.springboot.models.Employee;
+import net.java.springboot.models.Manager;
 import net.java.springboot.projectException.ResourceNotFoundException;
 import net.java.springboot.repositories.DepartmentRepository;
 import net.java.springboot.repositories.EmployeeRepository;
@@ -27,7 +31,7 @@ import net.java.springboot.repositories.EmployeeRepository;
 @RequestMapping("/api/v1/")
 public class EmployeeController {
 	@Autowired
-	EmployeeRepository employeeRepository;
+	private EmployeeRepository employeeRepository;
 	
 	@Autowired
 	private DepartmentRepository departmentRepository;
@@ -40,7 +44,9 @@ public class EmployeeController {
 		return false;
 	}
 	
+	private double factor = 1.5;
 	private String genderArr[] = new String[] {"male", "female", "other"};
+	
 	
 	//Get all employees
 	@GetMapping("/employees")
@@ -61,6 +67,11 @@ public class EmployeeController {
 	public Employee createEmployee(@RequestBody Employee employee) throws IllegalArgumentException {
 		if(!checkInArr(genderArr, employee.getGender()))
 			throw new IllegalArgumentException("Gender is not valid");
+		Optional<Employee> employeeFound = employeeRepository.findById(employee.getId());
+		//Check this employee has present in repository
+		if(employeeFound.isPresent()) {
+			throw new IllegalArgumentException("This employee has been created");
+		}
 		return employeeRepository.save(employee);
 	}
 	
@@ -75,15 +86,22 @@ public class EmployeeController {
 		Employee employeeFound = employeeRepository.findById(employeeId)
 				.orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + employeeId));
 		
-		if(departmentFound.getBasicSalary() < employeeFound.getSalary())
-				throw new ResourceNotFoundException("Employee's salary is more than basic depart's salary");
+		//Avoid when employee has been created
+		if(departmentFound.getEmployee().contains(employeeFound) || (departmentFound.getManager() != null && departmentFound.getManager().equals(employeeFound)))
+			throw new IllegalArgumentException("This employee has been added");
 		
-		//Change depart attribute
-		employeeFound.setDepart(departmentFound.getId());
-		
-		//Add to depart
-		departmentFound.getEmployee().add(employeeFound);
-		departmentRepository.save(departmentFound);
+		//Increase number of employee
+		if(departmentFound.getNumberOfEmployees() < departmentFound.getMaxEmployees()) {
+			departmentFound.setNumberOfEmployees(departmentFound.getNumberOfEmployees() + 1);
+			//Change depart attribute
+			employeeFound.setDepart(departmentFound.getId());
+			//Add to depart
+			departmentFound.getEmployee().add(employeeFound);
+			departmentRepository.save(departmentFound);
+		}
+		else {
+			throw new IllegalArgumentException("This department has no vacancy left");
+		}
 		return ResponseEntity.ok(employeeFound);
 	}
 	
@@ -130,14 +148,17 @@ public class EmployeeController {
 		//If this department already have a manager or this employee is not in the department
 		if(departmentFound.getManager() != null || employeeFound.getDepart() != departmentFound.getId()) {
 			throw new IllegalArgumentException("Can't set this employee to manager");
-		}
-			
+		}	
 		//Set to manager
-		employeeFound.setRole("Manager");
-		employeeFound.setSalary(employeeFound.getSalary() * 1.5);
-		departmentFound.setManager(employeeFound);
-		departmentRepository.save(departmentFound);
-		return ResponseEntity.ok(employeeFound);
+		Manager manager = new Manager(employeeFound, factor);
+		//set Inauguration Date to current Date
+		Date currentTime = Calendar.getInstance().getTime();
+		manager.setInaugurationDate(currentTime);
+		
+		employeeRepository.deleteById(employeeId);
+		departmentFound.setManager(manager);
+		departmentRepository.save(departmentFound);	
+		return ResponseEntity.ok(manager);
 	}
 	
 	//Set a manager to employee
@@ -152,16 +173,18 @@ public class EmployeeController {
 			.orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + employeeId));
 			
 		//If this employee is not manager
-		if(departmentFound.getManager().getId() != employeeFound.getId()) {
+		if(departmentFound.getManager() == null || !departmentFound.getManager().equals(employeeFound)) {
 			throw new IllegalArgumentException("This employee is not manager");
-		}
+		}	
+		//Set to staff, create new Employee with copy of manager, then delete the manager
+		Employee newEmployee = new Employee(employeeFound);
+		newEmployee.setToStaff(factor);
 				
-		//Set to manager
-		employeeFound.setRole("Staff");
-		employeeFound.setSalary(employeeFound.getSalary() / 1.5);
 		departmentFound.setManager(null);
+		employeeRepository.deleteById(employeeId);
+		departmentFound.getEmployee().add(newEmployee);
 		departmentRepository.save(departmentFound);
-		return ResponseEntity.ok(employeeFound);
+		return ResponseEntity.ok(newEmployee);
 	}
 	
 	//Update employee, throw an exception if could not find Employee with given id
@@ -191,18 +214,30 @@ public class EmployeeController {
 	public ResponseEntity<Map<String, Boolean>> deleteEmployee(@PathVariable Long id) {
 		Employee employee = employeeRepository.findById(id)
 				.orElseThrow(() -> new ResourceNotFoundException("Employee not exist with id: " + id));
+		//If this employee in any department
+		if(employee.getDepart() > 0) {
+			Department department = departmentRepository.findById(employee.getDepart())
+					.orElseThrow(() -> new ResourceNotFoundException("Department not exist with Employee id: " + id));
+			department.setNumberOfEmployees(department.getNumberOfEmployees() - 1);
+			//If this employee is Manager
+			if(employee.getRole().equals("Manager")) {
+				department.setManager(null);
+			}
+		}
 		employeeRepository.delete(employee);
-		
 		Map<String, Boolean> response = new HashMap<>();
 		response.put("deleted employee with id: " + employee.getId(), Boolean.TRUE);
 		return ResponseEntity.ok(response);
 	}
 	
-	//Delete all employee in repository
+	//Delete all employee in repository (Use for testing)
 	@DeleteMapping("/employees")
 	public ResponseEntity<Map<String, Boolean>> deleteAllEmployee() {
 		employeeRepository.deleteAll();
-		
+		List<Department> departments = departmentRepository.findAll();
+		for(Department depart : departments) {
+			depart.setNumberOfEmployees(0);
+		}
 		Map<String, Boolean> response = new HashMap<>();
 		response.put("deleted all employees", Boolean.TRUE);
 		return ResponseEntity.ok(response);
