@@ -8,6 +8,8 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
+import javax.validation.constraints.Email;
+import javax.validation.constraints.Pattern;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -15,27 +17,31 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Table(name = "Employee")
 public class Employee {
 	@Id
-	@Column(name = "id", nullable = false)
-	private long id;
+	@Column(name = "id")
+	protected long id;
 	
 	@Column(name = "first_name", length = 25, nullable = false)
+	@Pattern(regexp = "[a-zA-Z]*", message = "FirstName is not valid")
 	protected String firstName;
 	
 	@Column(name = "last_name", length = 50, nullable = false)
+	@Pattern(regexp = "[a-zA-Z ]*", message = "LastName is not valid")
 	protected String lastName;
 	
 	@Column(name = "gender", nullable = false)
 	protected String gender;
 	
 	@Column(name = "email", unique = true, nullable = false)
+	@Email(message = "Email is not valid")
 	protected String email;
 	
 	@Column(name = "phone", unique = true, nullable = false)
+	@Pattern(regexp = "0[0-9]{9}", message = "Phone is not valid")
 	protected String phone;
 	
 	@Temporal(TemporalType.DATE)
 	@DateTimeFormat(pattern = "dd/mm/yyyy")
-	@Column(name = "birth_day", nullable = false)
+	@Column(name = "dayOfBirth", nullable = false)
 	protected Date birthDay;
 	
 	@Column(name = "role")
@@ -46,7 +52,7 @@ public class Employee {
 	
 	@Column(name = "depart")
 	protected long depart = 0;
-
+	
 	//Default Constructor
 	public Employee() {
 		super();
@@ -78,20 +84,6 @@ public class Employee {
 		this.birthDay = employee.getBirthDay();
 		this.salary = employee.getSalary();
 		this.depart = employee.getDepart();
-	}
-	
-	//Constructor with Manager
-		public Employee(Manager manager) {
-			super();
-			this.id = manager.getId();
-			this.firstName = manager.getFirstName();
-			this.lastName = manager.getLastName();
-			this.gender = manager.getGender();		
-			this.email = manager.getEmail();
-			this.phone = manager.getPhone();
-			this.birthDay = manager.getBirthDay();
-			this.salary = manager.getSalary();
-			this.depart = manager.getDepart();
 	}
 		
 	public void setToManager(double factor) {
@@ -189,5 +181,5 @@ public class Employee {
 		return "Employee [id=" + id + ", firstName=" + firstName + ", lastName=" + lastName + ", gender=" + gender
 				+ ", email=" + email + ", phone=" + phone + ", birthDay=" + birthDay + ", role=" + role + ", salary="
 				+ salary + ", depart=" + depart + "]";
-	}	
+	}
 }

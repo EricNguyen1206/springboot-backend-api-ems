@@ -21,12 +21,12 @@ public class Department {
 	private long id;
 	
 	@Column(name = "name", length = 100, unique = true, nullable = false)
-	String name;
+	private String name;
 	
 	@Column(name = "numberOfEmployees")
 	private int numberOfEmployees = 0;
 	
-	@Column(name = "maxEployees", nullable = false)
+	@Column(name = "maxEmployees", nullable = false)
 	private int maxEmployees;
 	
 	//Set of employee
@@ -44,11 +44,11 @@ public class Department {
 		super();
 	}
 
-	//Constructor with name and maxEmployees
-	public Department(String name, int maxEmployees) {
+	//Constructor with name and basic salary
+	public Department(String name, int maxEmployee) {
 		super();
 		this.name = name;
-		this.maxEmployees = maxEmployees;
+		this.maxEmployees = maxEmployee;
 	}
 
 	public long getId() {
@@ -91,7 +91,7 @@ public class Department {
 		this.employee = employee;
 	}
 
-	public Manager getManager() {
+	public Employee getManager() {
 		return manager;
 	}
 

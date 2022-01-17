@@ -7,5 +7,8 @@ import net.java.springboot.models.Employee;
 
 @Repository
 public interface EmployeeRepository extends JpaRepository<Employee, Long>{
-
+	//find with email
+	Employee findByEmail(String email);
+	//find with phone number
+	Employee findByPhone(String phone);
 }
